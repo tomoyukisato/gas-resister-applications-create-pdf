@@ -3,46 +3,80 @@
 //}
 function doPost(e){
   try{
-    var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications');
-    var last_row = ss.getLastRow();
-    
-    ss.getRange(last_row, 15, last_row, 20).copyTo(ss.getRange(last_row+1,15));
+
     //var activeRow = applicationSheet.getActiveCell().getRow();
-    
     //データ取得
     var date = new Date();
+    var hour = date.getHours();
+    var min = date.getMinutes();
+    var sec = date.getSeconds();
     
     var num = e.parameter.contractNumber;
-  
-    ss.getRange(1 ,2 ).setValue(e.parameter.contractNumber);
-    ss.getRange(last_row+1 ,2 ).setValue(num);
     var y = e.parameter.contractYear;
-    ss.getRange(last_row+1 ,3 ).setValue(y);
     var m = e.parameter.contractMonth;
-    ss.getRange(last_row+1 ,4 ).setValue(m);
     var d = e.parameter.contractDay;
-    ss.getRange(last_row+1 ,5 ).setValue(d);
     var name = e.parameter.name;
-    ss.getRange(last_row+1 ,6 ).setValue(name);
     var kana = e.parameter.kana;
-    ss.getRange(last_row+1 ,7 ).setValue(kana);
     var p_zip = e.parameter.postZip;
-    ss.getRange(last_row+1 ,8 ).setValue(p_zip);
     var p_add = e.parameter.postAddress;
-    ss.getRange(last_row+1 ,9 ).setValue(p_add);
     var zip = e.parameter.zip;
-    ss.getRange(last_row+1 ,10 ).setValue(zip);
     var add = e.parameter.address;
-    ss.getRange(last_row+1 ,11 ).setValue(add);
     var tel = e.parameter.tel;
-    ss.getRange(last_row+1 ,12 ).setValue(tel);
     var mail= e.parameter.mailaddress;
-    ss.getRange(last_row+1 ,13 ).setValue(mail);
-    var id = e.parameter.productId;
-    ss.getRange(last_row+1 ,14 ).setValue(id);
+    var id = e.parameter.productId; 
+    var error = e.parameter.error;
     
+    if(error == ''){
+      var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications');
+      var last_row = ss.getLastRow();
+      
+      ss.getRange(last_row, 15, last_row, 20).copyTo(ss.getRange(last_row+1,15));
+      //ss.getRange(1 ,2 ).setValue(e.parameter.contractNumber);
+      
+      ss.getRange(last_row+1 ,2 ).setValue(num);
+      ss.getRange(last_row+1 ,3 ).setValue(y);
+      ss.getRange(last_row+1 ,4 ).setValue(m);
+      ss.getRange(last_row+1 ,5 ).setValue(d);
+      ss.getRange(last_row+1 ,6 ).setValue(name);
+      ss.getRange(last_row+1 ,7 ).setValue(kana);
+      ss.getRange(last_row+1 ,8 ).setValue(p_zip);
+      ss.getRange(last_row+1 ,9 ).setValue(p_add);
+      ss.getRange(last_row+1 ,10 ).setValue(zip);
+      ss.getRange(last_row+1 ,11 ).setValue(add);
+      ss.getRange(last_row+1 ,12 ).setValue(tel);
+      ss.getRange(last_row+1 ,13 ).setValue(mail);
+      ss.getRange(last_row+1 ,14 ).setValue(id);    
+      Logger.log("errorなし");
+    }else{
     
-    Logger.log(last_row);
+      var es = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('決済失敗');
+      var error_last_row = es.getLastRow();
+      
+      //es.getRange(1 ,2 ).setValue(e.parameter.contractNumber);
+      es.getRange(error_last_row, 3 ).copyTo(es.getRange(error_last_row+1,3));
+      es.getRange(error_last_row, 17, error_last_row, 22).copyTo(es.getRange(error_last_row+1,17));
+      var timestamp = y+'/'+ m +'/'+d+' '+hour+':'+min+':'+sec;
+      es.getRange(error_last_row+1 ,4 ).setValue(timestamp);
+      es.getRange(error_last_row+1 ,5 ).setValue(num);
+      es.getRange(error_last_row+1 ,6 ).setValue(y);
+      es.getRange(error_last_row+1 ,7 ).setValue(m);
+      es.getRange(error_last_row+1 ,8 ).setValue(d);
+      es.getRange(error_last_row+1 ,9 ).setValue(name);
+      es.getRange(error_last_row+1 ,10 ).setValue(kana);
+      es.getRange(error_last_row+1 ,11 ).setValue(p_zip);
+      es.getRange(error_last_row+1 ,12 ).setValue(p_add);
+      es.getRange(error_last_row+1 ,13 ).setValue(zip);
+      es.getRange(error_last_row+1 ,14 ).setValue(add);
+      es.getRange(error_last_row+1 ,15 ).setValue(tel);
+      es.getRange(error_last_row+1 ,16 ).setValue(mail);
+      es.getRange(error_last_row+1 ,17 ).setValue(id);    
+      es.getRange(error_last_row+1 ,2 ).setValue(error);
+      Logger.log("error");
+    }
+        
+    Logger.log(error_last_row);
+
+
     //データ整合
     //var array = [date,name,food];
     //sheet.appendRow(array);

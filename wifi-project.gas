@@ -1,0 +1,363 @@
+//function doGet(){
+//  Logger.log("aaa");
+//}
+function doPost(e){
+  try{
+    var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications');
+    var last_row = ss.getLastRow();
+    
+    ss.getRange(last_row, 15, last_row, 20).copyTo(ss.getRange(last_row+1,15));
+    //var activeRow = applicationSheet.getActiveCell().getRow();
+    
+    //データ取得
+    var date = new Date();
+    
+    var num = e.parameter.contractNumber;
+  
+    ss.getRange(1 ,2 ).setValue(e.parameter.contractNumber);
+    ss.getRange(last_row+1 ,2 ).setValue(num);
+    var y = e.parameter.contractYear;
+    ss.getRange(last_row+1 ,3 ).setValue(y);
+    var m = e.parameter.contractMonth;
+    ss.getRange(last_row+1 ,4 ).setValue(m);
+    var d = e.parameter.contractDay;
+    ss.getRange(last_row+1 ,5 ).setValue(d);
+    var name = e.parameter.name;
+    ss.getRange(last_row+1 ,6 ).setValue(name);
+    var kana = e.parameter.kana;
+    ss.getRange(last_row+1 ,7 ).setValue(kana);
+    var p_zip = e.parameter.postZip;
+    ss.getRange(last_row+1 ,8 ).setValue(p_zip);
+    var p_add = e.parameter.postAddress;
+    ss.getRange(last_row+1 ,9 ).setValue(p_add);
+    var zip = e.parameter.zip;
+    ss.getRange(last_row+1 ,10 ).setValue(zip);
+    var add = e.parameter.address;
+    ss.getRange(last_row+1 ,11 ).setValue(add);
+    var tel = e.parameter.tel;
+    ss.getRange(last_row+1 ,12 ).setValue(tel);
+    var mail= e.parameter.mailaddress;
+    ss.getRange(last_row+1 ,13 ).setValue(mail);
+    var id = e.parameter.productId;
+    ss.getRange(last_row+1 ,14 ).setValue(id);
+    
+    
+    Logger.log(last_row);
+    //データ整合
+    //var array = [date,name,food];
+    //sheet.appendRow(array);
+    
+    return ContentService.createTextOutput('complate');
+  }catch(e){
+
+    var strTo='afp@freedive.co.jp';　
+    var strFrom="support@mugen-wifi.com";
+    var strSender="【MugenWiFi】カスタマーセンター"; 
+    var strBody= 'お疲れ様です。\r\n\r\nご契約内容がスプレッドシートへ登録できませんでした。\r\n\r\nRobotPaymentの管理画面から契約情報のご確認をお願い致します。\r\n\r\n宜しくお願い致します。';
+    var strSubject= '【mugen-wifi】エラー通知';
+    
+    /* メールを送信 */
+    GmailApp.sendEmail(
+      strTo, //toアドレス
+      strSubject,  //表題
+      strBody,　//本文
+      {
+        from: strFrom,　//fromアドレス
+        name: strSender,　//差出人
+      }
+    ); 
+  }
+    
+}
+function myFunction() {
+  if(getProps('running') === 'true') {
+    
+    Browser.msgBox('前回の発行処理が完了しておりません。もう一度発行処理を行ってください。');
+    
+    SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications').getActiveCell().setValue('');
+    
+  } else {
+    try{
+      // PDFの保存先となるフォルダID 確認方法は後述
+      var folderid = "1WpgxT4ZgBKD7xBm8WIibBtkZ4gL-tMsr";
+      
+      /////////////////////////////////////////////  
+      // 現在開いているスプレッドシートをPDF化したい場合//
+      ////////////////////////////////////////////
+      // 現在開いているスプレッドシートを取得
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var ui = SpreadsheetApp.getUi();
+      
+      // 現在開いているスプレッドシートのIDを取得
+      var ssid = ss.getId();
+      
+      var active = ss.getSheetByName('applications').getActiveCell();
+      
+      Logger.log(active.getColumn());
+      
+      if( active.getColumn() == 1){ 
+        
+        if (active.getValue() == '発行' ){
+          
+          var conf_run = ui.alert("契約書発行してよろしいでしょうか？", ui.ButtonSet.YES_NO);
+          
+          if(conf_run == ui.Button.YES){
+            set_property('running', true);
+            //登録処理
+            createTemplate();
+            // 現在開いているスプレッドシートのシートIDを取得
+            var sheetid = ss.getSheetByName('template').getSheetId();
+            
+            // ファイル名に使用する名前を取得
+            var customer_name = ss.getSheetByName('template').getRange("I1").getValue() ;
+            // ここで例として使用しているスプレッドシートのC15に顧客の名前が入っているため、それをファイル名用に取得しているだけです。
+            
+            // ファイル名に使用するタイムスタンプを取得
+            var timestamp = getTimestamp();
+            
+            // PDF作成関数
+            createPDF( folderid, ssid, sheetid, customer_name + "_" + timestamp );
+            
+            //テンプレートクリア
+            clearTemplate();
+            
+            set_property('running', false);
+            ui.alert("契約書の発行処理が完了しました。", ui.ButtonSet.OK);
+            
+          }else{
+            
+            ui.alert("処理はキャンセルされました", ui.ButtonSet.OK);
+            
+          }
+        }
+      }
+      
+    }catch(e){
+      set_property('running', false);
+      ui.alert("処理中にエラーが発生しました。", ui.ButtonSet.OK);
+    }
+  }
+}
+//対象行のレコード処理
+function createTemplate(){
+  var templateSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('template');
+  var applicationSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications');
+  
+  var activeRow = applicationSheet.getActiveCell().getRow();
+  
+  //契約番号　2行目  I1
+  var contractNumber = applicationSheet.getRange(activeRow, 2 ).getValue();
+  templateSheet.getRange("I1").setValue(contractNumber);
+  //契約年	3行目 D9
+  var contractYear = applicationSheet.getRange(activeRow, 3 ).getValue();
+  templateSheet.getRange("D9").setValue(contractYear);
+  //契約月	4行目 F9
+  var contractMonth = applicationSheet.getRange(activeRow, 4 ).getValue();
+  templateSheet.getRange("F9").setValue(contractMonth);
+  //契約日	5行目 H9
+  var contractDay = applicationSheet.getRange(activeRow, 5 ).getValue();
+  templateSheet.getRange("H9").setValue(contractDay);
+  //ご契約名	6行目D10
+  var name = applicationSheet.getRange(activeRow, 6 ).getValue();
+  templateSheet.getRange("D10").setValue(name);
+  //カナ	7行目 D11
+  var kana = applicationSheet.getRange(activeRow, 7 ).getValue();
+  templateSheet.getRange("D11").setValue(kana);
+  //契約　郵便番号	8行目D12
+  var zip = applicationSheet.getRange(activeRow, 10 ).getValue();
+  templateSheet.getRange("D12").setValue(zip);
+  //契約　住所	9行目 D13
+  var address = applicationSheet.getRange(activeRow, 11 ).getValue();
+  templateSheet.getRange("D13").setValue(address);
+  //電話番号　10行目	 D14
+  var tel = applicationSheet.getRange(activeRow, 12 ).getValue();
+  templateSheet.getRange("D14").setValue(tel);
+  //ご契約プラン名	13行目 D17
+  var plan = applicationSheet.getRange(activeRow, 15 ).getValue();
+  templateSheet.getRange("D17").setValue(plan);
+  //ご契約端末名	14行目 D18
+  var device = applicationSheet.getRange(activeRow, 16 ).getValue();
+  templateSheet.getRange("D18").setValue(device);
+  //補償プラン	15行目 D21
+  var compensation = applicationSheet.getRange(activeRow, 17 ).getValue();
+  templateSheet.getRange("D21").setValue(compensation);
+  //月額費用	16行目 E28
+  var monthlyPrice  = applicationSheet.getRange(activeRow, 18 ).getValue();
+  templateSheet.getRange("E28").setValue(monthlyPrice);
+  //月額費用（オプション）	補償プランありの場合、500 なしの場合0 E29
+  //var contract = applicationSheet.getRange(activeRow, 16 ).getValue();
+  var free = compensation == 'あり' ? 500 : 0 ;
+  templateSheet.getRange("E29").setValue(free);
+  
+  //更新月(年)	17行目 E54
+  var renewYear = applicationSheet.getRange(activeRow, 19 ).getValue();
+  templateSheet.getRange("E54").setValue(renewYear);
+  //更新月(月)　18行目 G54
+  var renewMonth = applicationSheet.getRange(activeRow, 20 ).getValue();
+  templateSheet.getRange("G54").setValue(renewMonth);
+  
+  Logger.log('完了');
+}
+//リセット処理
+function clearTemplate(){
+  var templateSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('template');
+  templateSheet.getRange("I1").setValue('');
+  //契約年	3行目 D9
+  templateSheet.getRange("D9").setValue('');
+  //契約月	4行目 F9
+  templateSheet.getRange("F9").setValue('');
+  //契約日	5行目 H9
+  templateSheet.getRange("H9").setValue('');
+  //ご契約名	6行目D10
+  templateSheet.getRange("D10").setValue('');
+  //カナ	7行目 D11
+  templateSheet.getRange("D11").setValue('');
+  //郵便番号	8行目D12
+  templateSheet.getRange("D12").setValue('');
+  //住所	9行目 D13
+  templateSheet.getRange("D13").setValue('');
+  //電話番号　10行目	 D14
+  templateSheet.getRange("D14").setValue('');
+  //ご契約プラン名	13行目 D17
+  templateSheet.getRange("D17").setValue('');
+  //ご契約端末名	14行目 D18
+  templateSheet.getRange("D18").setValue('');
+  //補償プラン	15行目 D21
+  templateSheet.getRange("D21").setValue('');
+  //月額費用	16行目 E28
+  templateSheet.getRange("E28").setValue('');
+  //月額費用（オプション）	補償プランありの場合、500 なしの場合0 E29
+  templateSheet.getRange("E29").setValue('');
+  //更新月(年)	17行目 E54
+  templateSheet.getRange("E54").setValue('');
+  //更新月(月)　18行目 G54
+  templateSheet.getRange("G54").setValue('');
+}
+// PDF作成関数　引数は（folderid:保存先フォルダID, ssid:PDF化するスプレッドシートID, sheetid:PDF化するシートID, filename:PDFの名前）
+function createPDF(folderid, ssid, sheetid, filename){
+
+  // PDFファイルの保存先となるフォルダをフォルダIDで指定
+  var folder = DriveApp.getFolderById(folderid);
+
+  // スプレッドシートをPDFにエクスポートするためのURL。このURLに色々なオプションを付けてPDFを作成
+  var url = "https://docs.google.com/spreadsheets/d/SSID/export?".replace("SSID", ssid);
+
+  // PDF作成のオプションを指定
+  var opts = {
+    exportFormat: "pdf",    // ファイル形式の指定 pdf / csv / xls / xlsx
+    format:       "pdf",    // ファイル形式の指定 pdf / csv / xls / xlsx
+    size:         "A4",     // 用紙サイズの指定 legal / letter / A4
+    portrait:     "true",   // true → 縦向き、false → 横向き
+    fitw:         "true",   // 幅を用紙に合わせるか
+    sheetnames:   "false",  // シート名をPDF上部に表示するか
+    printtitle:   "false",  // スプレッドシート名をPDF上部に表示するか
+    pagenumbers:  "false",  // ページ番号の有無
+    gridlines:    "false",  // グリッドラインの表示有無
+    fzr:          "false",  // 固定行の表示有無
+    gid:          sheetid   // シートIDを指定 sheetidは引数で取得
+  };
+  
+  var url_ext = [];
+  
+  // 上記のoptsのオプション名と値を「=」で繋げて配列url_extに格納
+  for( optName in opts ){
+    url_ext.push( optName + "=" + opts[optName] );
+  }
+
+  // url_extの各要素を「&」で繋げる
+  var options = url_ext.join("&");
+
+  // API使用のためのOAuth認証
+  var token = ScriptApp.getOAuthToken();
+
+    // PDF作成
+    var response = UrlFetchApp.fetch(url + options, {
+      headers: {
+        'Authorization': 'Bearer ' +  token
+      }
+    });
+
+  var blob = response.getBlob().setName(filename + '.pdf');
+  
+  //メール送信
+  sendMail(blob);
+  
+  //　PDFを指定したフォルダに保存
+  folder.createFile(blob);
+
+}
+// タイムスタンプを返す関数
+function getTimestamp () {
+    var now = new Date();
+    var year = now.getYear();
+    var month = now.getMonth() + 1;
+    var day = now.getDate();
+    var hour = now.getHours();
+    var min = now.getMinutes();
+    // var sec = now.getSeconds();
+    
+    return year + "_" + month + "_" + day + "_" + hour + min;
+}
+
+function sendMail(blob){
+ try{ 
+  /* スプレッドシートのシートを取得と準備 */
+  var ss = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('applications');
+  var active = ss.getActiveCell().getRow();
+  Logger.log('active'+ active);
+  //var i = active.getRow();
+  //var activeRow = applicationSheet.getActiveCell().getRow();
+  
+  //var mySheet=SpreadsheetApp.getActiveSheet(); //シートを取得
+  //var rowSheet=mySheet.getDataRange().getLastRow(); //シートの使用範囲のうち最終行を取得
+  
+  /* ドキュメント「メール本文テスト」を取得する */
+  var docTest=DocumentApp.openById("1Obx1LE4bxp6bU6nF6r9f8tKnCYrzm4KkeCB9giQuIDs"); //ドキュメントをIDで取得
+  //var docTest=DocumentApp.openById("1_-V3Fb8lZUd3prgZcZE62RieOtvkYvxMUAIw5ukcdqw");//お詫びメール
+  var strDoc=docTest.getBody().getText(); //ドキュメントの内容を取得
+  
+  /* メール表題、fromアドレス、差出人名を準備 */
+  var strSubject="【MugenWiFi】ご契約書のご連絡"; //表題
+  //var strSubject="[お詫び]【MugenWiFi】ご契約書内容誤表記のお詫びと訂正";
+  var strFrom="support@mugen-wifi.com"; //From
+  var strSender="【MugenWiFi】カスタマーセンター"; //差出人
+  
+  /* シートの全ての行について社名、姓名を差し込みログに表示*/
+  //for(var i=3;i<=rowSheet;i++){
+    
+    var strFirst=ss.getRange(active,2).getValue();　//決済番号
+    var strSecond=ss.getRange(active,6).getValue();　//ご契約名
+    var strThird=ss.getRange(active,12).getValue();　//電話番号
+    var strFourth=ss.getRange(active,10).getValue();　//郵便番号
+    var strTo=ss.getRange(active,13).getValue();　//toアドレス
+    
+    var strBody=strDoc.replace(/{決済番号}/g,strFirst)
+    .replace(/{ご契約名}/g,strSecond)
+    .replace(/{電話番号}/g,strThird)
+    .replace(/{郵便番号}/g,strFourth); //社名、姓名を置換
+ 
+    /* メールを送信 */
+    GmailApp.sendEmail(
+      strTo, //toアドレス
+      strSubject,  //表題
+      strBody,　//本文
+      {
+        from: strFrom,　//fromアドレス
+        name: strSender,　//差出人
+        attachments: blob
+      }
+    ); 
+  }catch(e){
+    Browser.msgBox('メール送付に失敗しました。');
+  }
+}
+
+var ScriptProperties = PropertiesService.getScriptProperties();
+
+function getProps(id) {
+  return ScriptProperties.getProperty(id)
+}
+
+function set_property(key, value){
+  ScriptProperties.setProperty(key, value); 
+}
